@@ -24,52 +24,121 @@ Set-Theme Paradox-rl
 # General useful Windows-specific commands
 #######################################################
 
-# Set l and ls alias to use the new Get-ChildItemColor cmdlets
-Set-Alias l Get-ChildItemColor -Option AllScope
-Set-Alias ls Get-ChildItemColorFormatWide -Option AllScope
-
-# Helper function to change directory to my development workspace
-# Change c:\ws to your usual workspace and everytime you type
-# in cws from PowerShell it will take you directly there.
-function cws { Set-Location ~\Documents\Projects }
-
-function crt { Set-Location C:\ }
-
-# Helper function to set location to the User Profile directory
-function cuserprofile { Set-Location ~ }
-Set-Alias ~ cuserprofile -Option AllScope
-
-function Update-File
-{
-    $file = $args[0]
-    if($file -eq $null) {
-        throw "No filename supplied"
-    }
-
-    if(Test-Path $file)
-    {
-        (Get-ChildItem $file).LastWriteTime = Get-Date
-    }
-    else
-    {
-        Add-Content $file $null
-    }
-}
-
-Set-Alias touch Update-File
-
-Set-Alias trash Remove-ItemSafely
-function open($file) {
-	ii $file
-}
-
-function reload-powershell-profile {
-	& $profile
+# Reload the Shell
+function Reload-Powershell {
+    $newProcess = new-object System.Diagnostics.ProcessStartInfo "pwsh";
+    $newProcess.Arguments = "-nologo";
+    [System.Diagnostics.Process]::Start($newProcess);
+    exit
 }
 
 function get-path {
 	($Env:Path).Split(";")
 }
+
+# Extract a .zip file
+function Unzip-File {
+    <#
+    .SYNOPSIS
+       Extracts the contents of a zip file.
+    .DESCRIPTION
+       Extracts the contents of a zip file specified via the -File parameter to the
+    location specified via the -Destination parameter.
+    .PARAMETER File
+        The zip file to extract. This can be an absolute or relative path.
+    .PARAMETER Destination
+        The destination folder to extract the contents of the zip file to.
+    .PARAMETER ForceCOM
+        Switch parameter to force the use of COM for the extraction even if the .NET Framework 4.5 is present.
+    .EXAMPLE
+       Unzip-File -File archive.zip -Destination .\d
+    .EXAMPLE
+       'archive.zip' | Unzip-File
+    .EXAMPLE
+        Get-ChildItem -Path C:\zipfiles | ForEach-Object {$_.fullname | Unzip-File -Destination C:\databases}
+    .INPUTS
+       String
+    .OUTPUTS
+       None
+    .NOTES
+       Inspired by:  Mike F Robbins, @mikefrobbins
+       This function first checks to see if the .NET Framework 4.5 is installed and uses it for the unzipping process, otherwise COM is used.
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+        [string]$File,
+
+        [ValidateNotNullOrEmpty()]
+        [string]$Destination = (Get-Location).Path
+    )
+
+    $filePath = Resolve-Path $File
+    $destinationPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Destination)
+
+    if (($PSVersionTable.PSVersion.Major -ge 3) -and
+       ((Get-ItemProperty -Path "HKLM:\Software\Microsoft\NET Framework Setup\NDP\v4\Full" -ErrorAction SilentlyContinue).Version -like "4.5*" -or
+       (Get-ItemProperty -Path "HKLM:\Software\Microsoft\NET Framework Setup\NDP\v4\Client" -ErrorAction SilentlyContinue).Version -like "4.5*")) {
+
+        try {
+            [System.Reflection.Assembly]::LoadWithPartialName("System.IO.Compression.FileSystem") | Out-Null
+            [System.IO.Compression.ZipFile]::ExtractToDirectory("$filePath", "$destinationPath")
+        } catch {
+            Write-Warning -Message "Unexpected Error. Error details: $_.Exception.Message"
+        }
+    } else {
+        try {
+            $shell = New-Object -ComObject Shell.Application
+            $shell.Namespace($destinationPath).copyhere(($shell.NameSpace($filePath)).items())
+        } catch {
+            Write-Warning -Message "Unexpected Error. Error details: $_.Exception.Message"
+        }
+    }
+}
+
+#######################################################
+# Aliases
+#######################################################
+
+Set-Alias trash Remove-ItemSafely
+
+# Set l and ls alias to use the new Get-ChildItemColor cmdlets
+Set-Alias l Get-ChildItemColor -Option AllScope
+Set-Alias ls Get-ChildItemColorFormatWide -Option AllScope
+
+function crt { Set-Location C:\ }
+
+# Easier Navigation: .., ..., ...., ....., and ~
+${function:~} = { Set-Location ~ }
+# PoSh won't allow ${function:..} because of an invalid path error, so...
+${function:Set-ParentLocation} = { Set-Location .. }; Set-Alias ".." Set-ParentLocation
+${function:...} = { Set-Location ..\.. }
+${function:....} = { Set-Location ..\..\.. }
+${function:.....} = { Set-Location ..\..\..\.. }
+${function:......} = { Set-Location ..\..\..\..\.. }
+
+# Navigation Shortcuts
+${function:dt} = { Set-Location ~\Desktop }
+${function:docs} = { Set-Location ~\Documents }
+${function:dl} = { Set-Location ~\Downloads }
+${function:proj} = { Set-Location ~\Documents\Projects }
+
+# linux aliases
+function touch($file) { "" | Out-File $file -Encoding ASCII }
+function which($name) { Get-Command $name -ErrorAction SilentlyContinue | Select-Object Definition }
+function open($file) {
+	ii $file
+}
+Set-Alias time Measure-Command
+
+# Create a new directory and enter it
+Set-Alias mkd CreateAndSet-Directory
+# Reload the shell
+Set-Alias reload Reload-Powershell
+
+# Set GVim as default vim
+Set-Alias vim gvim
+
 
 #######################################################
 # Shell startup tasks
