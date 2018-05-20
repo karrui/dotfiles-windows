@@ -106,8 +106,6 @@ Set-Alias trash Remove-ItemSafely
 Set-Alias l Get-ChildItemColor -Option AllScope
 Set-Alias ls Get-ChildItemColorFormatWide -Option AllScope
 
-function crt { Set-Location C:\ }
-
 # Easier Navigation: .., ..., ...., ....., and ~
 ${function:~} = { Set-Location ~ }
 # PoSh won't allow ${function:..} because of an invalid path error, so...
@@ -122,6 +120,7 @@ ${function:dt} = { Set-Location ~\Desktop }
 ${function:docs} = { Set-Location ~\Documents }
 ${function:dl} = { Set-Location ~\Downloads }
 ${function:proj} = { Set-Location ~\Documents\Projects }
+${function:croot} = { Set-Location C:\ }
 
 # linux aliases
 function touch($file) { "" | Out-File $file -Encoding ASCII }
