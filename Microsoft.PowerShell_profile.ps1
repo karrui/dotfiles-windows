@@ -1,4 +1,6 @@
-﻿#######################################################
+﻿Clear-Host
+
+#######################################################
 # Modules for import
 #######################################################
 
@@ -119,7 +121,7 @@ ${function:......} = { Set-Location ..\..\..\..\.. }
 ${function:dt} = { Set-Location ~\Desktop }
 ${function:docs} = { Set-Location ~\Documents }
 ${function:dl} = { Set-Location ~\Downloads }
-${function:proj} = { Set-Location ~\Documents\Projects }
+${function:proj} = { Set-Location D:\Projects }
 ${function:croot} = { Set-Location C:\ }
 
 # linux aliases
@@ -128,19 +130,12 @@ function which($name) { Get-Command $name -ErrorAction SilentlyContinue | Select
 function open($file) {
 	ii $file
 }
-Set-Alias time Measure-Command
 
 # Create a new directory and enter it
 Set-Alias mkd CreateAndSet-Directory
 # Reload the shell
 Set-Alias reload Reload-Powershell
 
-# Set GVim as default vim
-Set-Alias vim gvim
-
-
 #######################################################
 # Shell startup tasks
 #######################################################
-
-cd C:\
